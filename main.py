@@ -1,494 +1,238 @@
-# import streamlit as st
-# import requests
-# from PIL import Image
-# from io import BytesIO
-# import base64
-# import os
+import os
+import base64
+from io import BytesIO
+from typing import Optional
 
-# # Page configuration
-# # Get the directory of the current script
-# current_dir = os.path.dirname(os.path.abspath(__file__))
-# logo_path = os.path.join(current_dir, "logo.png")
-
-# st.set_page_config(
-#     page_title="Deepfake-Proof eKYC System",
-#     page_icon=logo_path if os.path.exists(logo_path) else "🛡️",
-#     layout="wide"
-# )
-
-# # Custom CSS for better styling
-# st.markdown("""
-#     <style>
-#     .main-header {
-#         text-align: center;
-#         color: #1f77b4;
-#         font-size: 2.5rem;
-#         font-weight: bold;
-#         margin-bottom: 2rem;
-#         display: flex;
-#         align-items: center;
-#         justify-content: center;
-#         gap: 1rem;
-#     }
-#     .header-logo {
-#         width: 60px;
-#         height: 60px;
-#         object-fit: contain;
-#     }
-#     .footer {
-#         text-align: center;
-#         margin-top: 3rem;
-#         padding: 1rem;
-#         color: #666;
-#     }
-#     </style>
-# """, unsafe_allow_html=True)
-
-# # Header with logo
-# # Center the logo and title
-# col1, col2, col3 = st.columns([2, 3, 2])
-# with col2:
-#     # Display small logo centered
-#     if os.path.exists(logo_path):
-#         logo_img = Image.open(logo_path)
-#         # Create columns to center the logo
-#         logo_col1, logo_col2, logo_col3 = st.columns([1, 1, 1])
-#         with logo_col2:
-#             st.image(logo_img, width=50)
-#     st.markdown("<h2 style='text-align: center; color: #1f77b4; font-size: 2.5rem; font-weight: bold; margin-top: 0.5rem;'>Deepfake-Proof eKYC System</h2>", unsafe_allow_html=True)
-
-# st.markdown("---")
-
-# # Flask Backend URL (modify if your backend is hosted elsewhere)
-# FLASK_BACKEND_URL = "http://localhost:5000"
-
-# # Initialize session state for storing results
-# if 'verification_done' not in st.session_state:
-#     st.session_state.verification_done = False
-# if 'results' not in st.session_state:
-#     st.session_state.results = None
-# if 'images' not in st.session_state:
-#     st.session_state.images = {'img1': None, 'img2': None}
-
-# # Helper function to get the final image (prioritize camera over upload)
-# def get_final_image(upload_img, cam_img):
-#     if cam_img is not None:
-#         return Image.open(cam_img)
-#     elif upload_img is not None:
-#         return Image.open(upload_img)
-#     return None
-
-# # Input Section
-# st.subheader("📸 Step 1: Provide Two Face Images")
-# col1, col2 = st.columns(2)
-
-# with col1:
-#     st.markdown("### Face 1: Reference Image (ID Proof)")
-#     img1_upload = st.file_uploader("Upload Face 1", type=["jpg", "png", "jpeg"], key="upload1")
-#     img1_cam = st.camera_input("Or Capture Face 1", key="cam1")
-    
-#     final_img1 = get_final_image(img1_upload, img1_cam)
-#     if final_img1:
-#         st.image(final_img1, caption="Selected Face 1", use_container_width=True)
-
-# with col2:
-#     st.markdown("### Face 2: Live Verification (Selfie)")
-#     img2_upload = st.file_uploader("Upload Face 2", type=["jpg", "png", "jpeg"], key="upload2")
-#     img2_cam = st.camera_input("Or Capture Face 2", key="cam2")
-    
-#     final_img2 = get_final_image(img2_upload, img2_cam)
-#     if final_img2:
-#         st.image(final_img2, caption="Selected Face 2", use_container_width=True)
-
-# st.markdown("---")
-
-# # Authentication Button
-# st.subheader("🔐 Step 2: Authenticate")
-
-# if st.button("🔍 Authenticate", type="primary", use_container_width=True):
-#     # Validate inputs
-#     if not final_img1 or not final_img2:
-#         st.warning("⚠️ Please provide both images before authentication.")
-#     else:
-#         # Store images in session state
-#         st.session_state.images['img1'] = final_img1
-#         st.session_state.images['img2'] = final_img2
-        
-#         with st.spinner("🔄 Authenticating... Please wait"):
-#             try:
-#                 # Convert images to bytes for sending to Flask
-#                 img1_bytes = BytesIO()
-#                 final_img1.save(img1_bytes, format='PNG')
-#                 img1_bytes.seek(0)
-                
-#                 img2_bytes = BytesIO()
-#                 final_img2.save(img2_bytes, format='PNG')
-#                 img2_bytes.seek(0)
-                
-#                 # Prepare files for POST request
-#                 files = {
-#                     'image1': ('face1.png', img1_bytes, 'image/png'),
-#                     'image2': ('face2.png', img2_bytes, 'image/png')
-#                 }
-                
-#                 # Send request to Flask backend
-#                 response = requests.post(f"{FLASK_BACKEND_URL}/verify", files=files, timeout=30)
-                
-#                 if response.status_code == 200:
-#                     results = response.json()
-#                     st.session_state.results = results
-#                     st.session_state.verification_done = True
-#                     st.success("✅ Authentication completed successfully!")
-#                 else:
-#                     st.error(f"❌ Backend error: {response.status_code} - {response.text}")
-                    
-#             except requests.exceptions.ConnectionError:
-#                 st.error("❌ Cannot connect to Flask backend. Make sure it's running on http://localhost:5000")
-#             except Exception as e:
-#                 st.error(f"❌ Error during authentication: {str(e)}")
-
-# # Results Display Section
-# if st.session_state.verification_done and st.session_state.results:
-#     st.markdown("---")
-#     st.subheader("📊 Verification Results")
-    
-#     results = st.session_state.results
-    
-#     # Display metrics in columns
-#     metric_col1, metric_col2, metric_col3 = st.columns(3)
-    
-#     with metric_col1:
-#         similarity = results.get('similarity_score', 0)
-#         st.metric("Similarity Score", f"{similarity * 100:.2f}%")
-#         st.progress(similarity)
-    
-#     with metric_col2:
-#         liveness = results.get('liveness_score', 0)
-#         st.metric("Liveness Score", f"{liveness * 100:.2f}%")
-#         st.progress(liveness)
-    
-#     with metric_col3:
-#         authenticity = results.get('authenticity', 'Unknown')
-#         if authenticity.lower() == "genuine":
-#             st.success(f"✅ **{authenticity}**")
-#         else:
-#             st.error(f"🚨 **{authenticity}**")
-    
-#     # Display images side by side
-#     st.markdown("### 📷 Image Comparison")
-#     img_col1, img_col2 = st.columns(2)
-    
-#     with img_col1:
-#         st.image(st.session_state.images['img1'], caption="Face 1 (Reference)", use_container_width=True)
-    
-#     with img_col2:
-#         st.image(st.session_state.images['img2'], caption="Face 2 (Verification)", use_container_width=True)
-    
-#     st.markdown("---")
-    
-#     # Explainability Section
-#     st.subheader("🧠 Step 3: Explain Decision (Optional)")
-    
-#     if st.button("🧠 Explain Decision (Grad-CAM)", type="secondary", use_container_width=True):
-#         with st.spinner("🔄 Generating explanation... This may take a moment"):
-#             try:
-#                 # Prepare images again for explanation request
-#                 img1_bytes = BytesIO()
-#                 st.session_state.images['img1'].save(img1_bytes, format='PNG')
-#                 img1_bytes.seek(0)
-                
-#                 img2_bytes = BytesIO()
-#                 st.session_state.images['img2'].save(img2_bytes, format='PNG')
-#                 img2_bytes.seek(0)
-                
-#                 files = {
-#                     'image1': ('face1.png', img1_bytes, 'image/png'),
-#                     'image2': ('face2.png', img2_bytes, 'image/png')
-#                 }
-                
-#                 # Send request to explain endpoint
-#                 response = requests.post(f"{FLASK_BACKEND_URL}/explain", files=files, timeout=60)
-                
-#                 if response.status_code == 200:
-#                     explain_data = response.json()
-                    
-#                     st.success("✅ Explanation generated successfully!")
-#                     st.markdown("### 🔍 Grad-CAM Heatmap Visualization")
-#                     st.info("Red/yellow regions indicate areas the model focused on for decision-making.")
-                    
-#                     gradcam_col1, gradcam_col2 = st.columns(2)
-                    
-#                     # Decode base64 images (assuming backend returns base64 encoded images)
-#                     with gradcam_col1:
-#                         if 'gradcam1' in explain_data:
-#                             gradcam1_data = base64.b64decode(explain_data['gradcam1'])
-#                             gradcam1_img = Image.open(BytesIO(gradcam1_data))
-#                             st.image(gradcam1_img, caption="Face 1 - Grad-CAM Heatmap", use_container_width=True)
-                    
-#                     with gradcam_col2:
-#                         if 'gradcam2' in explain_data:
-#                             gradcam2_data = base64.b64decode(explain_data['gradcam2'])
-#                             gradcam2_img = Image.open(BytesIO(gradcam2_data))
-#                             st.image(gradcam2_img, caption="Face 2 - Grad-CAM Heatmap", use_container_width=True)
-#                 else:
-#                     st.error(f"❌ Explanation error: {response.status_code} - {response.text}")
-                    
-#             except requests.exceptions.ConnectionError:
-#                 st.error("❌ Cannot connect to Flask backend for explanation.")
-#             except Exception as e:
-#                 st.error(f"❌ Error generating explanation: {str(e)}")
-
-# # Footer
-# st.markdown("---")
-# st.markdown("""
-#     <div class='footer'>
-#         Made with ❤️ for ZenTej Season 3 @ CAIR IIT Mandi<br>
-#         <small>Powered by Advanced Deep Learning & Explainable AI</small>
-#     </div>
-# """, unsafe_allow_html=True)
-
-
-
-
-import streamlit as st
 import requests
 from PIL import Image
-from io import BytesIO
-import base64
-import os
+import streamlit as st
 
-# Page configuration
+
+APP_TITLE = "Deepfake-Proof eKYC System"
+
+# Resolve asset paths relative to this file
+_CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+_LOGO_PATH = os.path.join(_CURRENT_DIR, "logo.png")
+
 st.set_page_config(
-    page_title="Deepfake-Proof eKYC System",
-    page_icon="🛡️",
-    layout="wide"
+    page_title=APP_TITLE,
+    page_icon=_LOGO_PATH if os.path.exists(_LOGO_PATH) else "🛡️",
+    layout="wide",
 )
 
-# Custom CSS for better styling
-st.markdown("""
+# Custom CSS
+st.markdown(
+    """
     <style>
-    .main-header {
-        text-align: center;
-        color: #FF6B35;
-        font-size: 2.5rem;
-        font-weight: bold;
-        margin-bottom: 1rem;
-    }
-    .footer {
-        text-align: center;
-        margin-top: 3rem;
-        padding: 1rem;
-        color: #666;
-    }
+      .main-header { text-align:center; color:#1f77b4; font-size:2.2rem; font-weight:700; margin: 0.25rem 0 0.5rem; }
+      .subtle { color:#6b7280; }
+      .footer { text-align:center; margin-top:2rem; padding:1rem; color:#666; }
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-# Header with centered logo
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    # Display logo if exists
-    logo_path = "logo.png"
-    if os.path.exists(logo_path):
-        try:
-            logo_img = Image.open(logo_path)
-            # Create centered logo
-            logo_col1, logo_col2, logo_col3 = st.columns([1, 1, 1])
-            with logo_col2:
-                st.image(logo_img, width=80)
-        except:
-            pass
-    
-    # Title
-    st.markdown("<h2 class='main-header'>Deepfake-Proof eKYC System</h2>", unsafe_allow_html=True)
-st.markdown("---")
+# Sidebar: settings and help
+st.sidebar.header("Settings")
+_default_backend = os.getenv("BACKEND_URL", "http://localhost:5000").strip()
+backend_url = st.sidebar.text_input("Backend URL", value=_default_backend).strip() or _default_backend
+use_demo = st.sidebar.checkbox("Demo mode (no backend)", value=False, help="Generate sample results without calling the backend.")
 
-# Flask Backend URL (modify if your backend is hosted elsewhere)
-FLASK_BACKEND_URL = "http://localhost:5000"
+if st.sidebar.button("Reset session"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
 
-# Initialize session state for storing results
-if 'verification_done' not in st.session_state:
+with st.sidebar.expander("How to use", expanded=True):
+    st.markdown(
+        "- Upload or capture two face images.\n"
+        "- Click Authenticate to run verification.\n"
+        "- Optionally request an explanation heatmap."
+    )
+
+# Session state
+if "verification_done" not in st.session_state:
     st.session_state.verification_done = False
-if 'results' not in st.session_state:
+if "results" not in st.session_state:
     st.session_state.results = None
-if 'images' not in st.session_state:
-    st.session_state.images = {'img1': None, 'img2': None}
+if "images" not in st.session_state:
+    st.session_state.images = {"img1": None, "img2": None}
 
-# Helper function to get the final image (prioritize camera over upload)
-def get_final_image(upload_img, cam_img):
-    if cam_img is not None:
-        return Image.open(cam_img)
-    elif upload_img is not None:
-        return Image.open(upload_img)
+
+def _choose_image(upload_file, camera_file) -> Optional[Image.Image]:
+    try:
+        if camera_file is not None:
+            return Image.open(camera_file)
+        if upload_file is not None:
+            return Image.open(upload_file)
+    except Exception:
+        st.error("Unable to read the selected image. Please try a different file.")
     return None
 
-# Input Section
-st.subheader("📸 Step 1: Provide Two Face Images")
-col1, col2 = st.columns(2)
 
-with col1:
+def _img_to_bytes(img: Image.Image) -> BytesIO:
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+# Header with optional centered logo
+col_l, col_c, col_r = st.columns([1, 2, 1])
+with col_c:
+    if os.path.exists(_LOGO_PATH):
+        lc1, lc2, lc3 = st.columns([1, 1, 1])
+        with lc2:
+            st.image(_LOGO_PATH, width=80)
+    st.markdown(f"<div class='main-header'>{APP_TITLE}</div>", unsafe_allow_html=True)
+
+st.caption("Deepfake-resistant eKYC using face similarity, liveness, and explainability.")
+st.markdown("---")
+
+# Step 1: Inputs
+st.subheader("📸 Step 1: Provide Two Face Images")
+left, right = st.columns(2)
+
+final_img1: Optional[Image.Image] = None
+final_img2: Optional[Image.Image] = None
+
+with left:
     st.markdown("### Face 1: Reference Image (ID Proof)")
-    img1_upload = st.file_uploader("Upload Face 1", type=["jpg", "png", "jpeg"], key="upload1")
+    img1_upload = st.file_uploader("Upload Face 1", type=["jpg", "jpeg", "png"], key="upload1")
     img1_cam = st.camera_input("Or Capture Face 1", key="cam1")
-    
-    final_img1 = get_final_image(img1_upload, img1_cam)
-    if final_img1:
+    final_img1 = _choose_image(img1_upload, img1_cam)
+    if final_img1 is not None:
         st.image(final_img1, caption="Selected Face 1", use_container_width=True)
 
-with col2:
+with right:
     st.markdown("### Face 2: Live Verification (Selfie)")
-    img2_upload = st.file_uploader("Upload Face 2", type=["jpg", "png", "jpeg"], key="upload2")
+    img2_upload = st.file_uploader("Upload Face 2", type=["jpg", "jpeg", "png"], key="upload2")
     img2_cam = st.camera_input("Or Capture Face 2", key="cam2")
-    
-    final_img2 = get_final_image(img2_upload, img2_cam)
-    if final_img2:
+    final_img2 = _choose_image(img2_upload, img2_cam)
+    if final_img2 is not None:
         st.image(final_img2, caption="Selected Face 2", use_container_width=True)
 
 st.markdown("---")
 
-# Authentication Button
+# Step 2: Authenticate
 st.subheader("🔐 Step 2: Authenticate")
 
-if st.button("🔍 Authenticate", type="primary", use_container_width=True):
-    # Validate inputs
-    if not final_img1 or not final_img2:
+auth_clicked = st.button("🔍 Authenticate", type="primary", use_container_width=True)
+if auth_clicked:
+    if final_img1 is None or final_img2 is None:
         st.warning("⚠️ Please provide both images before authentication.")
     else:
-        # Store images in session state
-        st.session_state.images['img1'] = final_img1
-        st.session_state.images['img2'] = final_img2
-        
+        st.session_state.images["img1"] = final_img1
+        st.session_state.images["img2"] = final_img2
         with st.spinner("🔄 Authenticating... Please wait"):
             try:
-                # Convert images to bytes for sending to Flask
-                img1_bytes = BytesIO()
-                final_img1.save(img1_bytes, format='PNG')
-                img1_bytes.seek(0)
-                
-                img2_bytes = BytesIO()
-                final_img2.save(img2_bytes, format='PNG')
-                img2_bytes.seek(0)
-                
-                # Prepare files for POST request
-                files = {
-                    'image1': ('face1.png', img1_bytes, 'image/png'),
-                    'image2': ('face2.png', img2_bytes, 'image/png')
-                }
-                
-                # Send request to Flask backend
-                response = requests.post(f"{FLASK_BACKEND_URL}/verify", files=files, timeout=30)
-                
-                if response.status_code == 200:
-                    results = response.json()
-                    st.session_state.results = results
+                if use_demo:
+                    # Demo results, no backend call
+                    st.session_state.results = {
+                        "similarity_score": 0.87,
+                        "liveness_score": 0.93,
+                        "authenticity": "Genuine",
+                    }
                     st.session_state.verification_done = True
-                    st.success("✅ Authentication completed successfully!")
                 else:
-                    st.error(f"❌ Backend error: {response.status_code} - {response.text}")
-                    
+                    img1_bytes = _img_to_bytes(final_img1)
+                    img2_bytes = _img_to_bytes(final_img2)
+                    files = {
+                        "image1": ("face1.png", img1_bytes, "image/png"),
+                        "image2": ("face2.png", img2_bytes, "image/png"),
+                    }
+                    response = requests.post(f"{backend_url}/verify", files=files, timeout=45)
+                    if response.status_code == 200:
+                        st.session_state.results = response.json()
+                        st.session_state.verification_done = True
+                    else:
+                        st.error(f"❌ Backend error: {response.status_code} - {response.text}")
             except requests.exceptions.ConnectionError:
-                st.error("❌ Cannot connect to Flask backend. Make sure it's running on http://localhost:5000")
+                st.error("❌ Cannot connect to backend. Check the URL in the sidebar.")
             except Exception as e:
                 st.error(f"❌ Error during authentication: {str(e)}")
+            else:
+                if st.session_state.verification_done:
+                    st.success("✅ Authentication completed successfully!")
 
-# Results Display Section
+# Step 3: Results
 if st.session_state.verification_done and st.session_state.results:
     st.markdown("---")
     st.subheader("📊 Verification Results")
-    
+
     results = st.session_state.results
-    
-    # Display metrics in columns
-    metric_col1, metric_col2, metric_col3 = st.columns(3)
-    
-    with metric_col1:
-        similarity = results.get('similarity_score', 0)
+    similarity = float(results.get("similarity_score", 0.0) or 0.0)
+    liveness = float(results.get("liveness_score", 0.0) or 0.0)
+    authenticity = str(results.get("authenticity", "Unknown"))
+
+    m1, m2, m3 = st.columns(3)
+    with m1:
         st.metric("Similarity Score", f"{similarity * 100:.2f}%")
-        st.progress(similarity)
-    
-    with metric_col2:
-        liveness = results.get('liveness_score', 0)
+        st.progress(max(0.0, min(1.0, similarity)))
+    with m2:
         st.metric("Liveness Score", f"{liveness * 100:.2f}%")
-        st.progress(liveness)
-    
-    with metric_col3:
-        authenticity = results.get('authenticity', 'Unknown')
+        st.progress(max(0.0, min(1.0, liveness)))
+    with m3:
         if authenticity.lower() == "genuine":
-            st.success(f"✅ **{authenticity}**")
+            st.success("✅ Genuine")
         else:
-            st.error(f"🚨 **{authenticity}**")
-    
-    # Display images side by side
+            st.error(f"🚨 {authenticity}")
+
     st.markdown("### 📷 Image Comparison")
-    img_col1, img_col2 = st.columns(2)
-    
-    with img_col1:
-        st.image(st.session_state.images['img1'], caption="Face 1 (Reference)", use_container_width=True)
-    
-    with img_col2:
-        st.image(st.session_state.images['img2'], caption="Face 2 (Verification)", use_container_width=True)
-    
+    ic1, ic2 = st.columns(2)
+    with ic1:
+        st.image(st.session_state.images["img1"], caption="Face 1 (Reference)", use_container_width=True)
+    with ic2:
+        st.image(st.session_state.images["img2"], caption="Face 2 (Verification)", use_container_width=True)
+
     st.markdown("---")
-    
-    # Explainability Section
     st.subheader("🧠 Step 3: Explain Decision (Optional)")
-    
+
     if st.button("🧠 Explain Decision (Grad-CAM)", type="secondary", use_container_width=True):
         with st.spinner("🔄 Generating explanation... This may take a moment"):
             try:
-                # Prepare images again for explanation request
-                img1_bytes = BytesIO()
-                st.session_state.images['img1'].save(img1_bytes, format='PNG')
-                img1_bytes.seek(0)
-                
-                img2_bytes = BytesIO()
-                st.session_state.images['img2'].save(img2_bytes, format='PNG')
-                img2_bytes.seek(0)
-                
-                files = {
-                    'image1': ('face1.png', img1_bytes, 'image/png'),
-                    'image2': ('face2.png', img2_bytes, 'image/png')
-                }
-                
-                # Send request to explain endpoint
-                response = requests.post(f"{FLASK_BACKEND_URL}/explain", files=files, timeout=60)
-                
-                if response.status_code == 200:
-                    explain_data = response.json()
-                    
-                    st.success("✅ Explanation generated successfully!")
-                    st.markdown("### 🔍 Grad-CAM Heatmap Visualization")
-                    st.info("Red/yellow regions indicate areas the model focused on for decision-making.")
-                    
-                    gradcam_col1, gradcam_col2 = st.columns(2)
-                    
-                    # Decode base64 images (assuming backend returns base64 encoded images)
-                    with gradcam_col1:
-                        if 'gradcam1' in explain_data:
-                            gradcam1_data = base64.b64decode(explain_data['gradcam1'])
-                            gradcam1_img = Image.open(BytesIO(gradcam1_data))
-                            st.image(gradcam1_img, caption="Face 1 - Grad-CAM Heatmap", use_container_width=True)
-                    
-                    with gradcam_col2:
-                        if 'gradcam2' in explain_data:
-                            gradcam2_data = base64.b64decode(explain_data['gradcam2'])
-                            gradcam2_img = Image.open(BytesIO(gradcam2_data))
-                            st.image(gradcam2_img, caption="Face 2 - Grad-CAM Heatmap", use_container_width=True)
+                if use_demo:
+                    st.info("Demo mode enabled — explanation heatmaps are not available.")
                 else:
-                    st.error(f"❌ Explanation error: {response.status_code} - {response.text}")
-                    
+                    img1_bytes = _img_to_bytes(st.session_state.images["img1"])
+                    img2_bytes = _img_to_bytes(st.session_state.images["img2"])
+                    files = {
+                        "image1": ("face1.png", img1_bytes, "image/png"),
+                        "image2": ("face2.png", img2_bytes, "image/png"),
+                    }
+                    response = requests.post(f"{backend_url}/explain", files=files, timeout=60)
+                    if response.status_code == 200:
+                        explain_data = response.json()
+                        st.success("✅ Explanation generated successfully!")
+                        st.markdown("### 🔍 Grad-CAM Heatmap Visualization")
+                        st.info("Red/yellow regions indicate areas the model focused on for decision-making.")
+
+                        gc1, gc2 = st.columns(2)
+                        with gc1:
+                            if "gradcam1" in explain_data:
+                                gradcam1_data = base64.b64decode(explain_data["gradcam1"])
+                                gradcam1_img = Image.open(BytesIO(gradcam1_data))
+                                st.image(gradcam1_img, caption="Face 1 - Grad-CAM Heatmap", use_container_width=True)
+                        with gc2:
+                            if "gradcam2" in explain_data:
+                                gradcam2_data = base64.b64decode(explain_data["gradcam2"])
+                                gradcam2_img = Image.open(BytesIO(gradcam2_data))
+                                st.image(gradcam2_img, caption="Face 2 - Grad-CAM Heatmap", use_container_width=True)
+                    else:
+                        st.error(f"❌ Explanation error: {response.status_code} - {response.text}")
             except requests.exceptions.ConnectionError:
-                st.error("❌ Cannot connect to Flask backend for explanation.")
+                st.error("❌ Cannot connect to backend for explanation. Check the URL in the sidebar.")
             except Exception as e:
                 st.error(f"❌ Error generating explanation: {str(e)}")
 
 # Footer
 st.markdown("---")
-st.markdown("""
+st.markdown(
+    """
     <div class='footer'>
-        Made with ❤️ for ZenTej Season 3 @ CAIR IIT Mandi<br>
-        <small>Powered by Advanced Deep Learning & Explainable AI</small>
+      Made with ❤️ for ZenTej Season 3 @ CAIR IIT Mandi<br>
+      <small>Powered by Advanced Deep Learning & Explainable AI</small>
     </div>
-""", unsafe_allow_html=True)
-
-
-
+    """,
+    unsafe_allow_html=True,
+)
