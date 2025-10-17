@@ -11,7 +11,7 @@ import streamlit as st
 APP_TITLE = "Deepfake-Proof eKYC System"
 
 # Get backend URL from environment variable (Render dashboard) or use default
-DEFAULT_BACKEND = os.getenv("BACKEND_URL", "http://localhost:5000").strip()
+DEFAULT_BACKEND = os.getenv("BACKEND_URL", "https://2a241ae45796.ngrok-free.app/").strip()
 
 # Set page config (no __file__ path dependency)
 st.set_page_config(
