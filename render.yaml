@@ -6,4 +6,4 @@ services:
     startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
     envVars:
       - key: BACKEND_URL
-        value: "https://your-backend-url.onrender.com"
+        value: "https://2a241ae45796.ngrok-free.app/"
